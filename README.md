@@ -183,8 +183,22 @@ node scripts/restore.mjs --timestamp <last-good>
 
 ## Backup Structure
 
+By default, real backups are stored **outside the skill repo** to keep skill code and backup data separated:
+
+```text
+~/.openclaw/backups/openclaw-backup-restore-clawlite/
 ```
-backups/
+
+And the Git-tracked daily backup mirror lives separately at:
+
+```text
+~/.openclaw/backup-repos/openclaw-backup-restore-clawlite/
+```
+
+Structure:
+
+```
+~/.openclaw/backups/openclaw-backup-restore-clawlite/
 ├── 2026-03-05T00-51-30/
 │   ├── manifest.json          # Backup metadata
 │   ├── SOUL.md
@@ -193,7 +207,8 @@ backups/
 │   ├── IDENTITY.md
 │   ├── TOOLS.md
 │   ├── HEARTBEAT.md
-│   └── BOOTSTRAP.md
+│   ├── BOOTSTRAP.md
+│   └── openclaw.json or openclaw.sanitized.json
 ├── 2026-03-05T01-15-42/
 │   └── ...
 └── named/

@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const DEFAULT_WORKSPACE_ROOT = path.resolve(__dirname, '../../..');
-const BACKUP_DIR = path.join(__dirname, '../backups');
+const BACKUP_DIR = process.env.OPENCLAW_BACKUP_DIR || path.join(os.homedir(), '.openclaw', 'backups', 'openclaw-backup-restore-clawlite');
 const SOUL_FILES = [
   'SOUL.md',
   'USER.md',

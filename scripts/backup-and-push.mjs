@@ -2,16 +2,19 @@
 
 import { spawnSync } from 'child_process';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const SKILL_ROOT = path.resolve(__dirname, '..');
+const BACKUP_DIR = process.env.OPENCLAW_BACKUP_DIR || path.join(os.homedir(), '.openclaw', 'backups', 'openclaw-backup-restore-clawlite');
+const BACKUP_REPO_DIR = process.env.OPENCLAW_BACKUP_REPO_DIR || path.join(os.homedir(), '.openclaw', 'backup-repos', 'openclaw-backup-restore-clawlite');
 
 const args = process.argv.slice(2);
 const options = {
-  branch: null,
+  branch: 'main',
   remote: 'clawlite-backup',
   message: null,
   rawOpenClawConfig: true
@@ -31,7 +34,6 @@ for (let i = 0; i < args.length; i++) {
 
 function run(command, commandArgs, opts = {}) {
   const result = spawnSync(command, commandArgs, {
-    cwd: SKILL_ROOT,
     stdio: 'pipe',
     encoding: 'utf8',
     ...opts
@@ -47,19 +49,8 @@ function run(command, commandArgs, opts = {}) {
   return (result.stdout || '').trim();
 }
 
-function ensureGitRepo() {
-  if (!fs.existsSync(path.join(SKILL_ROOT, '.git'))) {
-    throw new Error(`No git repo found at ${SKILL_ROOT}`);
-  }
-}
-
-function currentBranch() {
-  return run('git', ['rev-parse', '--abbrev-ref', 'HEAD']);
-}
-
 function latestBackupDir() {
-  const backupsRoot = path.join(SKILL_ROOT, 'backups');
-  const entries = fs.readdirSync(backupsRoot, { withFileTypes: true })
+  const entries = fs.readdirSync(BACKUP_DIR, { withFileTypes: true })
     .filter(entry => entry.isDirectory() && entry.name !== 'named')
     .map(entry => entry.name)
     .sort();
@@ -68,32 +59,57 @@ function latestBackupDir() {
   return entries[entries.length - 1];
 }
 
-function main() {
-  ensureGitRepo();
+function ensureBackupRepo(remoteUrl) {
+  if (!fs.existsSync(BACKUP_REPO_DIR)) {
+    fs.mkdirSync(path.dirname(BACKUP_REPO_DIR), { recursive: true });
+    run('git', ['clone', '--branch', options.branch, remoteUrl, BACKUP_REPO_DIR], { cwd: SKILL_ROOT });
+    return;
+  }
 
-  const branch = options.branch || currentBranch();
+  if (!fs.existsSync(path.join(BACKUP_REPO_DIR, '.git'))) {
+    throw new Error(`Backup repo dir exists but is not a git repo: ${BACKUP_REPO_DIR}`);
+  }
+
+  run('git', ['fetch', 'origin'], { cwd: BACKUP_REPO_DIR });
+  run('git', ['checkout', options.branch], { cwd: BACKUP_REPO_DIR });
+  run('git', ['pull', '--ff-only', 'origin', options.branch], { cwd: BACKUP_REPO_DIR });
+}
+
+function syncBackupsIntoRepo() {
+  const target = path.join(BACKUP_REPO_DIR, 'backups');
+  fs.rmSync(target, { recursive: true, force: true });
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.cpSync(BACKUP_DIR, target, { recursive: true });
+}
+
+function main() {
   const backupArgs = ['scripts/backup.mjs'];
   if (options.rawOpenClawConfig) backupArgs.push('--raw-openclaw-config');
 
   console.log('🔍 Creating backup before git push...');
-  run('node', backupArgs);
+  run('node', backupArgs, { cwd: SKILL_ROOT });
 
   const latest = latestBackupDir();
   console.log(`✅ Latest backup: ${latest}`);
 
-  run('git', ['add', 'backups']);
+  const remoteUrl = run('git', ['remote', 'get-url', options.remote], { cwd: SKILL_ROOT });
+  ensureBackupRepo(remoteUrl);
+  syncBackupsIntoRepo();
 
-  const status = run('git', ['status', '--short', 'backups']);
+  run('git', ['add', 'backups'], { cwd: BACKUP_REPO_DIR });
+
+  const status = run('git', ['status', '--short', 'backups'], { cwd: BACKUP_REPO_DIR });
   if (!status) {
     console.log('ℹ️  No backup changes to commit.');
     return;
   }
 
   const message = options.message || `backup: ${latest}`;
-  run('git', ['commit', '-m', message]);
-  run('git', ['push', options.remote, branch]);
+  run('git', ['commit', '-m', message], { cwd: BACKUP_REPO_DIR });
+  run('git', ['push', 'origin', options.branch], { cwd: BACKUP_REPO_DIR });
 
-  console.log(`✅ Backup committed and pushed to ${options.remote}/${branch}`);
+  console.log(`✅ Backup committed and pushed to ${remoteUrl} (${options.branch})`);
+  console.log(`   Local backup repo: ${BACKUP_REPO_DIR}`);
   console.log(`   Commit message: ${message}`);
 }
 

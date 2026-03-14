@@ -1,7 +1,7 @@
 {
   "name": "openclaw-backup-restore",
-  "version": "1.5.0",
-  "description": "OpenClaw Backup Restore for workspace backup, restore, validation, auto git add/commit/push, and daily GitHub backup sync",
+  "version": "1.5.3",
+  "description": "This skill should be used when the user asks for OpenClaw backup, restore, rollback, validation, GitHub backup, off-machine backup, workspace recovery, or protection of OpenClaw state files and optional config backups.",
   "type": "module",
   "main": "scripts/backup.mjs",
   "bin": {

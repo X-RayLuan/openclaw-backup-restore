@@ -2,6 +2,7 @@
 // Minimal unit tests for soul-backup
 
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
@@ -11,6 +12,7 @@ const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const SKILL_DIR = path.resolve(__dirname, '..');
+const BACKUP_DIR = process.env.OPENCLAW_BACKUP_DIR || path.join(os.homedir(), '.openclaw', 'backups', 'openclaw-backup-restore-clawlite');
 
 let testsPassed = 0;
 let testsFailed = 0;
@@ -85,7 +87,7 @@ async function runTests() {
   // Test 9: openclaw.json sanitization (if exists)
   const openclawJsonPath = path.join(SKILL_DIR, '../..', 'openclaw.json');
   if (fs.existsSync(openclawJsonPath)) {
-    const backupPath = path.join(SKILL_DIR, 'backups/named/test-backup');
+    const backupPath = path.join(BACKUP_DIR, 'named/test-backup');
     const sanitizedPath = path.join(backupPath, 'openclaw.sanitized.json');
     
     if (fs.existsSync(sanitizedPath)) {
@@ -97,7 +99,7 @@ async function runTests() {
 
   // Test 10: Cleanup test backup
   try {
-    const testBackupPath = path.join(SKILL_DIR, 'backups/named/test-backup');
+    const testBackupPath = path.join(BACKUP_DIR, 'named/test-backup');
     if (fs.existsSync(testBackupPath)) {
       fs.rmSync(testBackupPath, { recursive: true });
       assert(true, 'Test backup cleanup successful');

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -8,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Configuration
-const BACKUP_DIR = path.join(__dirname, '../backups');
+const BACKUP_DIR = process.env.OPENCLAW_BACKUP_DIR || path.join(os.homedir(), '.openclaw', 'backups', 'openclaw-backup-restore-clawlite');
 
 // Parse CLI arguments
 const args = process.argv.slice(2);

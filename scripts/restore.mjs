@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
@@ -10,7 +11,7 @@ const __dirname = path.dirname(__filename);
 
 // Configuration
 const WORKSPACE_ROOT = path.resolve(__dirname, '../..');
-const BACKUP_DIR = path.join(__dirname, '../backups');
+const BACKUP_DIR = process.env.OPENCLAW_BACKUP_DIR || path.join(os.homedir(), '.openclaw', 'backups', 'openclaw-backup-restore-clawlite');
 const SOUL_FILES = [
   'SOUL.md',
   'USER.md',
