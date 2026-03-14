@@ -1,15 +1,15 @@
-# OpenClaw Daily Backup
+# OpenClaw Backup Restore
 
-**Never lose your agent's memory.** Daily backup and restore for OpenClaw workspace SOUL files.
+**Never lose your agent's memory or config.** Backup, restore, and daily GitHub sync for OpenClaw workspace state.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org/)
 
 ---
 
-## What is SOUL Backup?
+## What is OpenClaw Backup Restore?
 
-SOUL Backup protects your OpenClaw agent's personality, configuration, and memory by creating timestamped snapshots of critical workspace files:
+OpenClaw Backup Restore protects your OpenClaw agent's personality, configuration, and memory by creating timestamped snapshots of critical workspace files:
 
 - `SOUL.md` — agent personality and mission
 - `USER.md` — user profile and preferences
@@ -18,10 +18,11 @@ SOUL Backup protects your OpenClaw agent's personality, configuration, and memor
 - `TOOLS.md` — local tool configuration
 - `HEARTBEAT.md` — periodic task configuration
 - `BOOTSTRAP.md` — initialization instructions
+- `~/.openclaw/openclaw.json` — OpenClaw config file (sanitized by default, real config optional)
 
 **Problem:** Accidental deletion or bad configuration changes can destroy your agent's personality. Manual git setup is complex. No built-in OpenClaw backup exists.
 
-**Solution:** One-command backup/restore with validation, rollback, version history, automatic `git add` / `commit` / `push`, and built-in daily backup to GitHub.
+**Solution:** One-command backup/restore with validation, rollback, version history, automatic `git add` / `commit` / `push`, built-in daily backup to GitHub, and optional real `openclaw.json` config backup for true off-machine recovery.
 
 ---
 
@@ -31,15 +32,19 @@ SOUL Backup protects your OpenClaw agent's personality, configuration, and memor
 
 ```bash
 cd ~/.openclaw/workspace-YOUR-AGENT
-git clone https://github.com/X-RayLuan/soul-backup-skill.git
-cd soul-backup
+git clone https://github.com/X-RayLuan/openclaw-backup-restore.git
+cd openclaw-backup-restore
 chmod +x scripts/*.mjs
 ```
 
 ### Create Your First Backup
 
 ```bash
+# Default: backup workspace files + sanitized openclaw.json
 node scripts/backup.mjs
+
+# Include the real ~/.openclaw/openclaw.json config file in the backup
+node scripts/backup.mjs --raw-openclaw-config
 ```
 
 Output:
@@ -89,8 +94,9 @@ node scripts/validate.mjs
 ✅ **Pre-restore safety** — Every restore creates automatic rollback point  
 ✅ **Single-file restore** — Restore only specific files (e.g., `SOUL.md`)  
 ✅ **Zero dependencies** — Uses only Node.js built-ins (crypto, fs, path)
+✅ **OpenClaw config backup** — Backs up `~/.openclaw/openclaw.json` in sanitized mode by default, or real mode with `--raw-openclaw-config`
 ✅ **Auto git sync** — Built-in `git add` / `git commit` / `git push` flow via `backup-and-push.mjs`
-✅ **Daily GitHub backup** — Ready-to-use GitHub Actions workflow and remote sync pattern included
+✅ **Daily GitHub backup** — Ready-to-use daily remote backup pattern included
 
 ---
 
@@ -112,6 +118,18 @@ node scripts/restore.mjs --name "pre-migration"
 # Restore only SOUL.md
 node scripts/restore.mjs --file SOUL.md
 ```
+
+### Config File Backup Modes
+
+```bash
+# Default mode: backup a sanitized copy of ~/.openclaw/openclaw.json
+node scripts/backup.mjs
+
+# Real backup mode: include the actual config file for full recovery
+node scripts/backup.mjs --raw-openclaw-config
+```
+
+Use real config mode only with a private backup repo.
 
 ### Rollback After Bad Restore
 
